@@ -1345,11 +1345,6 @@ button.ghost.danger {
   .panel {
     border-radius: 12px;
   }
-  /* E subito sotto, modifica la regola .panel esistente o aggiungila così: */
-  .panel {
-    height: auto;
-    min-height: 480px; /* Assicura un'altezza minima generosa su mobile */
-  }
 
   .user-card {
     padding: 10px;
