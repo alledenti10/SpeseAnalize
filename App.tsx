@@ -150,10 +150,10 @@ const CATEGORY_LABELS = new Map<ExpenseCategory, string>(
 )
 
 const TREND_CHART = {
-  top: 12,
-  right: 116,
+  top: 20,
+  right: 136,
   bottom: 84,
-  left: 28,
+  left: 36,
 }
 
 const formatAxisCurrency = (value: number) =>
@@ -632,7 +632,7 @@ function App() {
     return Object.values(monthSums).reduce((s, v) => s + v, 0)
   }, [monthSums])
 
-  const trendMonths = useMemo(() => monthsOfYear.slice(-8), [monthsOfYear])
+  const trendMonths = useMemo(() => monthsOfYear.slice(-6), [monthsOfYear])
 
   const trendTotals = useMemo(
     () =>
@@ -687,36 +687,20 @@ function App() {
       const label = new Date(year, month - 1).toLocaleString('it-IT', {
         month: 'short',
       })
-      return { x, y, value, label }
+      return {
+        x,
+        y,
+        value,
+        label,
+        valueLabel: formatAxisCurrency(value),
+        valueY: Math.max(y - 6, TREND_CHART.top - 6),
+      }
     })
   }, [trendAxisMax, trendMonths, trendTotals, year])
 
   const trendPolyline = useMemo(
     () => trendPoints.map((point) => `${point.x},${point.y}`).join(' '),
     [trendPoints],
-  )
-
-  const compareMonths = useMemo(() => monthsOfYear.slice(-6), [monthsOfYear])
-
-  const compareData = useMemo(
-    () =>
-      compareMonths.map((m) => {
-        const mm = String(m).padStart(2, '0')
-        const key = `${year}-${mm}`
-        return {
-          key,
-          label: new Date(year, m - 1).toLocaleString('it-IT', {
-            month: 'short',
-          }),
-          total: monthSums[key] ?? 0,
-        }
-      }),
-    [compareMonths, monthSums, year],
-  )
-
-  const compareMax = useMemo(
-    () => Math.max(...compareData.map((item) => item.total), 1),
-    [compareData],
   )
 
   const breakdownData = useMemo(
@@ -993,9 +977,24 @@ function App() {
           message: 'Impossibile aggiornare la spesa. Riprova.',
         })
       } else if (data) {
+        const updatedExpense = data as Expense
+        const selectedMonth = selectedDate.slice(0, 7)
         setMonthExpenses((prev) =>
-          prev.map((item) => (item.id === editingExpenseId ? data : item)),
+          updatedExpense.date.startsWith(selectedMonth)
+            ? prev.some((item) => item.id === editingExpenseId)
+              ? prev.map((item) =>
+                  item.id === editingExpenseId ? updatedExpense : item,
+                )
+              : [updatedExpense, ...prev]
+            : prev.filter((item) => item.id !== editingExpenseId),
         )
+        setYearExpenses((prev) => {
+          const withoutUpdated = prev.filter(
+            (item) => item.id !== updatedExpense.id,
+          )
+          if (!updatedExpense.date.startsWith(`${year}-`)) return withoutUpdated
+          return [updatedExpense, ...withoutUpdated]
+        })
         setFormState(emptyForm)
         setEditingExpenseId(null)
         setStatus({ type: 'success', message: 'Spesa aggiornata.' })
@@ -1019,7 +1018,20 @@ function App() {
           message: 'Impossibile salvare la spesa. Riprova.',
         })
       } else if (data) {
-        setMonthExpenses((prev) => [data as Expense, ...prev])
+        const insertedExpense = data as Expense
+        setMonthExpenses((prev) =>
+          insertedExpense.date.startsWith(selectedDate.slice(0, 7))
+            ? [insertedExpense, ...prev]
+            : prev,
+        )
+        setYearExpenses((prev) =>
+          insertedExpense.date.startsWith(`${year}-`)
+            ? [
+                insertedExpense,
+                ...prev.filter((item) => item.id !== insertedExpense.id),
+              ]
+            : prev,
+        )
         setFormState(emptyForm)
         setStatus({ type: 'success', message: 'Spesa salvata.' })
       }
@@ -1059,6 +1071,7 @@ function App() {
       })
     } else {
       setMonthExpenses((prev) => prev.filter((item) => item.id !== expenseId))
+      setYearExpenses((prev) => prev.filter((item) => item.id !== expenseId))
       setStatus({ type: 'success', message: 'Spesa eliminata.' })
     }
 
@@ -1727,6 +1740,7 @@ function App() {
                 </button>
               </div>
               <div className="report-cta">
+                <span className="compact-label report-label">Reportistica</span>
                 <button
                   type="button"
                   className="primary report-toggle"
@@ -1737,7 +1751,6 @@ function App() {
                 >
                   {showReports ? 'Nascondi' : 'Grafico'}
                 </button>
-                <span className="compact-label report-label">Reportistica</span>
               </div>
             </div>
             <span className="compact-label">Importa</span>
@@ -1793,7 +1806,7 @@ function App() {
                 </div>
                 <div className="trend-chart">
                   <svg
-                    viewBox="0 0 120 100"
+                    viewBox="0 0 140 100"
                     role="img"
                     aria-label="Trend spese con asse verticale in euro"
                   >
@@ -1822,47 +1835,55 @@ function App() {
                         y1={TREND_CHART.top}
                         y2={TREND_CHART.bottom}
                       />
+                      <line
+                        className="trend-x-axis"
+                        x1={TREND_CHART.left}
+                        x2={TREND_CHART.right}
+                        y1={TREND_CHART.bottom}
+                        y2={TREND_CHART.bottom}
+                      />
                     </g>
                     <polyline
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="3"
+                      strokeWidth="2.8"
                       points={trendPolyline}
+                      className="trend-line"
                     />
                     {trendPoints.map((point) => (
-                      <circle
-                        key={`${point.label}-${point.value}`}
-                        cx={point.x}
-                        cy={point.y}
-                        r="2.8"
-                        className="trend-dot"
-                      />
+                      <g key={`${point.label}-${point.value}`}>
+                        <line
+                          className="trend-month-guide"
+                          x1={point.x}
+                          x2={point.x}
+                          y1={point.y}
+                          y2={TREND_CHART.bottom}
+                        />
+                        <text
+                          className="trend-point-value"
+                          x={point.x}
+                          y={point.valueY}
+                          textAnchor="middle"
+                        >
+                          {point.valueLabel}
+                        </text>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="3.8"
+                          className="trend-dot"
+                        />
+                        <text
+                          className="trend-month-label"
+                          x={point.x}
+                          y={TREND_CHART.bottom + 9}
+                          textAnchor="middle"
+                        >
+                          {point.label}
+                        </text>
+                      </g>
                     ))}
                   </svg>
-                  <div className="trend-legend">
-                    {trendPoints.map((point) => (
-                      <span key={`${point.label}-label`}>{point.label}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="report-section">
-                <div className="report-section-title">
-                  <span>Confronto mesi</span>
-                  <small className="muted">{compareData.length} mesi</small>
-                </div>
-                <div className="compare-chart">
-                  {compareData.map((item) => (
-                    <div key={item.key} className="compare-bar">
-                      <div
-                        className="compare-fill"
-                        style={{ height: `${(item.total / compareMax) * 100}%` }}
-                        title={formatCurrency(item.total)}
-                      />
-                      <span>{item.label}</span>
-                    </div>
-                  ))}
                 </div>
               </div>
 
