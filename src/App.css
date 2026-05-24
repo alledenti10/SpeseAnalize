@@ -431,7 +431,7 @@
 .report-toggle {
   align-self: flex-start;
   flex: 0 0 auto;
-  min-width: 120px;
+  min-width: 96px;
   width: auto;
   height: auto;
   white-space: nowrap;
@@ -1499,7 +1499,9 @@ button.ghost.danger {
   .report-toggle {
     align-self: flex-start;
     flex: 0 0 auto;
-    min-width: 120px;
+    min-width: 96px;
+    min-height: 0;
+    padding: 8px 10px;
   }
 
   .report-label {
@@ -1585,6 +1587,7 @@ button.ghost.danger {
   }
 
   .report-toggle {
+    flex: 0 0 auto;
     flex-basis: auto;
   }
 }
