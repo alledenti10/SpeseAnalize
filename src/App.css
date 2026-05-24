@@ -415,21 +415,21 @@
 
 .compact-row {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
 }
 
 .report-cta {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 6px;
   min-width: 0;
 }
 
 .report-toggle {
-  align-self: flex-end;
+  align-self: flex-start;
   flex: 0 0 auto;
   min-width: 120px;
   width: auto;
@@ -438,7 +438,7 @@
 }
 
 .report-label {
-  text-align: right;
+  text-align: left;
 }
 
 .compact-actions + .compact-actions {

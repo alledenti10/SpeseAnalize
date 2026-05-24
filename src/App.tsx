@@ -1740,6 +1740,7 @@ function App() {
                 </button>
               </div>
               <div className="report-cta">
+                <span className="compact-label report-label">Reportistica</span>
                 <button
                   type="button"
                   className="primary report-toggle"
@@ -1750,7 +1751,6 @@ function App() {
                 >
                   {showReports ? 'Nascondi' : 'Grafico'}
                 </button>
-                <span className="compact-label report-label">Reportistica</span>
               </div>
             </div>
             <span className="compact-label">Importa</span>
