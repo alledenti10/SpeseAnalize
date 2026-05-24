@@ -431,8 +431,9 @@
 .report-toggle {
   align-self: flex-end;
   flex: 0 0 auto;
-  min-width: 96px;
+  min-width: 120px;
   width: auto;
+  height: auto;
   white-space: nowrap;
 }
 
@@ -665,9 +666,11 @@
 }
 
 .panel.deadlines .panel-body.scroll {
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .sidebar-install {
@@ -1276,7 +1279,7 @@ button.ghost.danger {
 
   .panel.deadlines {
     grid-column: auto;
-    height: clamp(520px, 74svh, 720px);
+    height: clamp(540px, 78svh, 740px);
   }
 
   .panel-body.scroll {
@@ -1285,7 +1288,8 @@ button.ghost.danger {
 
   .panel.deadlines .panel-body.scroll {
     max-height: none;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: scroll;
   }
 }
 
@@ -1474,11 +1478,12 @@ button.ghost.danger {
   }
 
   .panel.deadlines {
-    height: clamp(560px, 78svh, 760px);
+    height: clamp(580px, 82svh, 780px);
   }
 
   .panel.deadlines .panel-body.scroll {
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: scroll;
     padding-right: 6px;
   }
 
@@ -1498,6 +1503,7 @@ button.ghost.danger {
   .report-toggle {
     align-self: flex-start;
     flex: 0 0 auto;
+    min-width: 120px;
   }
 
   .report-label {
