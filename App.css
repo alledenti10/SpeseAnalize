@@ -408,7 +408,15 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-  min-width: 180px;
+  min-width: 0;
+}
+
+.report-toggle {
+  align-self: flex-end;
+  flex: 0 0 auto;
+  min-width: 96px;
+  width: auto;
+  white-space: nowrap;
 }
 
 .report-label {
@@ -636,7 +644,13 @@
 
 .panel.deadlines {
   grid-column: span 2;
-  height: clamp(300px, 40vh, 380px);
+  height: clamp(460px, 58vh, 620px);
+}
+
+.panel.deadlines .panel-body.scroll {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .sidebar-install {
@@ -1245,10 +1259,16 @@ button.ghost.danger {
 
   .panel.deadlines {
     grid-column: auto;
+    height: clamp(520px, 74svh, 720px);
   }
 
   .panel-body.scroll {
     max-height: 320px;
+  }
+
+  .panel.deadlines .panel-body.scroll {
+    max-height: none;
+    overflow: auto;
   }
 }
 
@@ -1436,6 +1456,15 @@ button.ghost.danger {
     padding-right: 0;
   }
 
+  .panel.deadlines {
+    height: clamp(560px, 78svh, 760px);
+  }
+
+  .panel.deadlines .panel-body.scroll {
+    overflow: auto;
+    padding-right: 6px;
+  }
+
   .compare-chart {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1447,6 +1476,11 @@ button.ghost.danger {
 
   .report-cta {
     align-items: flex-start;
+  }
+
+  .report-toggle {
+    align-self: flex-start;
+    flex: 0 0 auto;
   }
 
   .report-label {
@@ -1529,5 +1563,9 @@ button.ghost.danger {
   .deadline-actions button,
   .form-actions button {
     flex-basis: 100%;
+  }
+
+  .report-toggle {
+    flex-basis: auto;
   }
 }
