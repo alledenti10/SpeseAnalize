@@ -16,6 +16,11 @@ type CategoryMeta = {
   description: string
 }
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
+
 const CATEGORY_META: CategoryMeta[] = [
   {
     value: 'volute',
@@ -234,9 +239,12 @@ function App() {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importedFiles, setImportedFiles] = useState<string[]>([])
   const [showImportedFiles, setShowImportedFiles] = useState(false)
+  const [showReports, setShowReports] = useState(false)
   const [notificationPermission, setNotificationPermission] = useState<
     NotificationPermission | 'unsupported'
   >('default')
+  const [installPrompt, setInstallPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -316,6 +324,25 @@ function App() {
       return
     }
     setNotificationPermission(Notification.permission)
+  }, [])
+
+  useEffect(() => {
+    const handlePrompt = (event: Event) => {
+      event.preventDefault()
+      setInstallPrompt(event as BeforeInstallPromptEvent)
+    }
+
+    const handleInstalled = () => {
+      setInstallPrompt(null)
+    }
+
+    window.addEventListener('beforeinstallprompt', handlePrompt)
+    window.addEventListener('appinstalled', handleInstalled)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handlePrompt)
+      window.removeEventListener('appinstalled', handleInstalled)
+    }
   }, [])
 
   useEffect(() => {
@@ -456,6 +483,70 @@ function App() {
   const yearTotal = useMemo(() => {
     return Object.values(monthSums).reduce((s, v) => s + v, 0)
   }, [monthSums])
+
+  const trendMonths = useMemo(() => monthsOfYear.slice(-8), [monthsOfYear])
+
+  const trendTotals = useMemo(
+    () =>
+      trendMonths.map((m) => {
+        const mm = String(m).padStart(2, '0')
+        const key = `${year}-${mm}`
+        return monthSums[key] ?? 0
+      }),
+    [monthSums, trendMonths, year],
+  )
+
+  const trendPoints = useMemo(() => {
+    const max = Math.max(...trendTotals, 1)
+    return trendTotals.map((value, index) => {
+      const x =
+        trendTotals.length === 1 ? 50 : (index / (trendTotals.length - 1)) * 100
+      const y = 100 - (value / max) * 70 - 15
+      const month = trendMonths[index]
+      const label = new Date(year, month - 1).toLocaleString('it-IT', {
+        month: 'short',
+      })
+      return { x, y, value, label }
+    })
+  }, [trendMonths, trendTotals, year])
+
+  const trendPolyline = useMemo(
+    () => trendPoints.map((point) => `${point.x},${point.y}`).join(' '),
+    [trendPoints],
+  )
+
+  const compareMonths = useMemo(() => monthsOfYear.slice(-6), [monthsOfYear])
+
+  const compareData = useMemo(
+    () =>
+      compareMonths.map((m) => {
+        const mm = String(m).padStart(2, '0')
+        const key = `${year}-${mm}`
+        return {
+          key,
+          label: new Date(year, m - 1).toLocaleString('it-IT', {
+            month: 'short',
+          }),
+          total: monthSums[key] ?? 0,
+        }
+      }),
+    [compareMonths, monthSums, year],
+  )
+
+  const compareMax = useMemo(
+    () => Math.max(...compareData.map((item) => item.total), 1),
+    [compareData],
+  )
+
+  const breakdownData = useMemo(
+    () =>
+      CATEGORY_META.map((category) => {
+        const total = monthTotals[category.value] ?? 0
+        const percentage = monthTotal > 0 ? (total / monthTotal) * 100 : 0
+        return { category, total, percentage }
+      }),
+    [monthTotal, monthTotals],
+  )
 
   const groupedByCategory = useMemo(() => {
     if (selectedCategories.length === 0) return {}
@@ -893,6 +984,26 @@ function App() {
     }
   }
 
+  const handleInstallApp = async () => {
+    if (!installPrompt) {
+      setStatus({
+        type: 'error',
+        message: 'Installazione non disponibile su questo dispositivo.',
+      })
+      return
+    }
+
+    await installPrompt.prompt()
+    const choice = await installPrompt.userChoice
+    setInstallPrompt(null)
+
+    if (choice.outcome === 'accepted') {
+      setStatus({ type: 'success', message: 'Installazione avviata.' })
+    } else {
+      setStatus({ type: 'error', message: 'Installazione annullata.' })
+    }
+  }
+
   const buildCsv = (
     items: Expense[],
     label: string,
@@ -1211,6 +1322,26 @@ function App() {
           </ul>
         </div>
 
+        <div className="sidebar-card sidebar-install">
+          <h3>App</h3>
+          <p className="sidebar-install-note">
+            Installa la web app per un accesso rapido dal dispositivo.
+          </p>
+          <button
+            type="button"
+            className="install-button"
+            onClick={handleInstallApp}
+            disabled={!installPrompt || busy}
+          >
+            Installa app
+          </button>
+          {!installPrompt && (
+            <span className="sidebar-install-hint">
+              Disponibile solo su dispositivi compatibili.
+            </span>
+          )}
+        </div>
+
       </aside>
 
       <main className="main">
@@ -1268,63 +1399,167 @@ function App() {
           </aside>
         </div>
 
-        <div className="compact-tools">
-          <div className="compact-title">Export / Import CSV</div>
-          <span className="compact-label">Esporta</span>
-          <div className="compact-actions">
-            <button type="button" onClick={() => handleExport('month')}>
-              Mese
-            </button>
-            <button
-              type="button"
-              className="primary"
-              onClick={() => handleExport('year')}
-            >
-              Anno
-            </button>
-            <button
-              type="button"
-              className="ghost"
-              onClick={() => setShowImportedFiles((prev) => !prev)}
-            >
-              File importati
-            </button>
+        <section className={`tools-grid ${showReports ? '' : 'tools-grid-single'}`}>
+          <div className="compact-tools">
+            <div className="compact-title">Export / Import Excel</div>
+            <span className="compact-label">Esporta</span>
+            <div className="compact-row">
+              <div className="compact-actions export-actions">
+                <button type="button" onClick={() => handleExport('month')}>
+                  Mese
+                </button>
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => handleExport('year')}
+                >
+                  Anno
+                </button>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => setShowImportedFiles((prev) => !prev)}
+                >
+                  File importati
+                </button>
+              </div>
+              <div className="report-cta">
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => setShowReports((prev) => !prev)}
+                >
+                  {showReports ? 'Nascondi grafici' : 'Visualizza grafico spese'}
+                </button>
+                <span className="compact-label report-label">Reportistica</span>
+              </div>
+            </div>
+            <span className="compact-label">Importa</span>
+            <div className="compact-actions">
+              <label className="file-input">
+                <span>Seleziona Excel</span>
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(event) =>
+                    setImportFile(event.target.files?.[0] ?? null)
+                  }
+                />
+              </label>
+              <button
+                type="button"
+                className="ghost"
+                onClick={handleImport}
+                disabled={!importFile || busy}
+              >
+                {busy ? 'Importazione...' : 'Importa'}
+              </button>
+            </div>
+            {showImportedFiles && (
+              <div className="imported-list">
+                {importedFiles.length === 0 ? (
+                  <span className="muted">Nessun file importato.</span>
+                ) : (
+                  <ul>
+                    {importedFiles.map((name, index) => (
+                      <li key={`${name}-${index}`}>{name}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
-          <span className="compact-label">Importa</span>
-          <div className="compact-actions">
-            <label className="file-input">
-              <span>Seleziona CSV</span>
-              <input
-                type="file"
-                accept=".csv,text/csv"
-                onChange={(event) =>
-                  setImportFile(event.target.files?.[0] ?? null)
-                }
-              />
-            </label>
-            <button
-              type="button"
-              className="ghost"
-              onClick={handleImport}
-              disabled={!importFile || busy}
-            >
-              {busy ? 'Importazione...' : 'Importa'}
-            </button>
-          </div>
-          {showImportedFiles && (
-            <div className="imported-list">
-              {importedFiles.length === 0 ? (
-                <span className="muted">Nessun file importato.</span>
-              ) : (
-                <ul>
-                  {importedFiles.map((name, index) => (
-                    <li key={`${name}-${index}`}>{name}</li>
+
+          {showReports && (
+            <div className="report-panel">
+              <div className="report-header">
+                <div>
+                  <p className="eyebrow">Reportistica visiva</p>
+                  <h3>Trend e confronto</h3>
+                </div>
+                <span className="muted">Ultimi mesi</span>
+              </div>
+
+              <div className="report-section">
+                <div className="report-section-title">
+                  <span>Trend spese</span>
+                  <strong>{formatCurrency(yearTotal)}</strong>
+                </div>
+                <div className="trend-chart">
+                  <svg viewBox="0 0 100 100" role="img" aria-label="Trend spese">
+                    <polyline
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      points={trendPolyline}
+                    />
+                    {trendPoints.map((point) => (
+                      <circle
+                        key={`${point.label}-${point.value}`}
+                        cx={point.x}
+                        cy={point.y}
+                        r="2.8"
+                        className="trend-dot"
+                      />
+                    ))}
+                  </svg>
+                  <div className="trend-legend">
+                    {trendPoints.map((point) => (
+                      <span key={`${point.label}-label`}>{point.label}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="report-section">
+                <div className="report-section-title">
+                  <span>Confronto mesi</span>
+                  <small className="muted">{compareData.length} mesi</small>
+                </div>
+                <div className="compare-chart">
+                  {compareData.map((item) => (
+                    <div key={item.key} className="compare-bar">
+                      <div
+                        className="compare-fill"
+                        style={{ height: `${(item.total / compareMax) * 100}%` }}
+                        title={formatCurrency(item.total)}
+                      />
+                      <span>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="report-section">
+                <div className="report-section-title">
+                  <span>Breakdown categorie</span>
+                  <small className="muted">Mese corrente</small>
+                </div>
+                <ul className="breakdown-list">
+                  {breakdownData.map((item) => (
+                    <li key={item.category.value}>
+                      <div className="breakdown-meta">
+                        <span className={`badge ${item.category.value}`}>
+                          {item.category.label}
+                        </span>
+                        <small>{formatCurrency(item.total)}</small>
+                      </div>
+                      <div className="breakdown-bar">
+                        <div
+                          className={`breakdown-fill ${item.category.value}`}
+                          style={{ width: `${item.percentage}%` }}
+                        />
+                      </div>
+                      <span className="breakdown-pct">
+                        {Math.round(item.percentage)}%
+                      </span>
+                    </li>
                   ))}
                 </ul>
-              )}
+              </div>
             </div>
           )}
-        </div>
+        </section>
 
 
         <div className="year-panel">
