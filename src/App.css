@@ -261,51 +261,68 @@
 
 .trend-chart {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .trend-chart svg {
   width: 100%;
-  height: 120px;
+  height: 170px;
   color: var(--accent);
+  overflow: visible;
+}
+
+.trend-axis line {
+  stroke: rgba(95, 108, 130, 0.26);
+  stroke-width: 0.7;
+}
+
+.trend-axis text {
+  fill: var(--muted);
+  font-family: var(--font-sans);
+  font-size: 5px;
+  font-weight: 600;
+}
+
+.trend-axis .trend-y-axis,
+.trend-axis .trend-x-axis {
+  stroke: rgba(95, 108, 130, 0.42);
+  stroke-width: 0.9;
+}
+
+.trend-line {
+  filter: drop-shadow(0 2px 3px rgba(31, 78, 140, 0.22));
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trend-month-guide {
+  stroke: rgba(31, 78, 140, 0.16);
+  stroke-dasharray: 2 2;
+  stroke-width: 0.7;
 }
 
 .trend-dot {
   fill: var(--accent);
+  stroke: #fff;
+  stroke-width: 2;
 }
 
-.trend-legend {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(36px, 1fr));
-  gap: 4px;
-  font-size: 10px;
-  color: var(--muted);
+.trend-point-value,
+.trend-month-label {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.trend-point-value {
+  fill: var(--ink);
+  font-size: 5.2px;
+}
+
+.trend-month-label {
+  fill: var(--muted);
+  font-size: 5.4px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.compare-chart {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
-  align-items: end;
-  min-height: 110px;
-}
-
-.compare-bar {
-  display: grid;
-  gap: 6px;
-  justify-items: center;
-  color: var(--muted);
-  font-size: 10px;
-}
-
-.compare-fill {
-  width: 100%;
-  min-height: 8px;
-  border-radius: 10px;
-  background: linear-gradient(160deg, var(--accent), var(--accent-2));
-  transition: height 0.3s ease;
 }
 
 .breakdown-list {
@@ -408,7 +425,16 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-  min-width: 180px;
+  min-width: 0;
+}
+
+.report-toggle {
+  align-self: flex-end;
+  flex: 0 0 auto;
+  min-width: 120px;
+  width: auto;
+  height: auto;
+  white-space: nowrap;
 }
 
 .report-label {
@@ -636,7 +662,15 @@
 
 .panel.deadlines {
   grid-column: span 2;
-  height: clamp(300px, 40vh, 380px);
+  height: clamp(460px, 58vh, 620px);
+}
+
+.panel.deadlines .panel-body.scroll {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .sidebar-install {
@@ -1245,10 +1279,17 @@ button.ghost.danger {
 
   .panel.deadlines {
     grid-column: auto;
+    height: clamp(540px, 78svh, 740px);
   }
 
   .panel-body.scroll {
     max-height: 320px;
+  }
+
+  .panel.deadlines .panel-body.scroll {
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: scroll;
   }
 }
 
@@ -1436,8 +1477,14 @@ button.ghost.danger {
     padding-right: 0;
   }
 
-  .compare-chart {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .panel.deadlines {
+    height: clamp(580px, 82svh, 780px);
+  }
+
+  .panel.deadlines .panel-body.scroll {
+    overflow-x: hidden;
+    overflow-y: scroll;
+    padding-right: 6px;
   }
 
   .compact-row {
@@ -1447,6 +1494,12 @@ button.ghost.danger {
 
   .report-cta {
     align-items: flex-start;
+  }
+
+  .report-toggle {
+    align-self: flex-start;
+    flex: 0 0 auto;
+    min-width: 120px;
   }
 
   .report-label {
@@ -1529,5 +1582,9 @@ button.ghost.danger {
   .deadline-actions button,
   .form-actions button {
     flex-basis: 100%;
+  }
+
+  .report-toggle {
+    flex-basis: auto;
   }
 }

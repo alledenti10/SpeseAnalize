@@ -1,5 +1,7 @@
 create extension if not exists "pgcrypto";
 
+grant usage on schema public to anon, authenticated;
+
 create table if not exists public.expenses (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -26,6 +28,8 @@ $$;
 
 create index if not exists expenses_user_date_idx
   on public.expenses (user_id, date);
+
+grant select, insert, update, delete on public.expenses to authenticated;
 
 alter table public.expenses enable row level security;
 
@@ -81,6 +85,8 @@ $$;
 create index if not exists deadlines_user_date_idx
   on public.deadlines (user_id, date);
 
+grant select, insert, update, delete on public.deadlines to authenticated;
+
 alter table public.deadlines enable row level security;
 
 drop policy if exists "Users can view own deadlines" on public.deadlines;
@@ -122,6 +128,8 @@ create table if not exists public.notification_subscriptions (
 
 create index if not exists notification_subscriptions_user_idx
   on public.notification_subscriptions (user_id);
+
+grant select, insert, update, delete on public.notification_subscriptions to authenticated;
 
 alter table public.notification_subscriptions enable row level security;
 
@@ -167,6 +175,8 @@ create table if not exists public.audit_logs (
 create index if not exists audit_logs_user_idx
   on public.audit_logs (user_id, created_at desc);
 
+grant select on public.audit_logs to authenticated;
+
 alter table public.audit_logs enable row level security;
 
 drop policy if exists "Users can view own audit logs" on public.audit_logs;
@@ -178,17 +188,24 @@ create policy "Users can view own audit logs"
 create or replace function public.log_audit()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
+declare
+  audit_record record;
 begin
+  audit_record := case when tg_op = 'DELETE' then old else new end;
+
   insert into public.audit_logs (user_id, table_name, action, record_id, data)
   values (
-    coalesce(new.user_id, old.user_id),
+    audit_record.user_id,
     tg_table_name,
     tg_op,
-    coalesce(new.id, old.id),
-    to_jsonb(coalesce(new, old))
+    audit_record.id,
+    to_jsonb(audit_record)
   );
-  return coalesce(new, old);
+
+  return audit_record;
 end;
 $$;
 
@@ -218,6 +235,8 @@ create or replace function public.check_rate_limit(
 )
 returns void
 language plpgsql
+security definer
+set search_path = public
 as $$
 declare
   current_window timestamp with time zone := date_trunc('second', now());
@@ -248,6 +267,8 @@ $$;
 create or replace function public.enforce_rate_limit()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
 begin
   perform public.check_rate_limit(new.user_id, tg_table_name || '_write', 120, 3600);
