@@ -1347,7 +1347,8 @@ button.ghost.danger {
   }
   /* E subito sotto, modifica la regola .panel esistente o aggiungila così: */
   .panel {
-    height: 500px;
+    height: auto;
+    min-height: 480px; /* Assicura un'altezza minima generosa su mobile */
   }
 
   .user-card {
