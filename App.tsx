@@ -149,6 +149,31 @@ const CATEGORY_LABELS = new Map<ExpenseCategory, string>(
   CATEGORY_META.map((item) => [item.value, item.label]),
 )
 
+const TREND_CHART = {
+  top: 12,
+  right: 116,
+  bottom: 84,
+  left: 28,
+}
+
+const formatAxisCurrency = (value: number) =>
+  new Intl.NumberFormat('it-IT', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(value)
+
+const getNiceAxisMax = (value: number) => {
+  if (value <= 0) return 1
+
+  const magnitude = 10 ** Math.floor(Math.log10(value))
+  const normalized = value / magnitude
+  const niceStep =
+    normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10
+
+  return niceStep * magnitude
+}
+
 const CATEGORY_ALIASES = new Map<string, ExpenseCategory>([
   ['volute', 'volute'],
   ['dovute', 'dovute'],
@@ -619,19 +644,52 @@ function App() {
     [monthSums, trendMonths, year],
   )
 
+  const trendHasValues = useMemo(
+    () => trendTotals.some((value) => value > 0),
+    [trendTotals],
+  )
+
+  const trendAxisMax = useMemo(
+    () => getNiceAxisMax(Math.max(...trendTotals, 0)),
+    [trendTotals],
+  )
+
+  const trendAxisTicks = useMemo(() => {
+    const values = trendHasValues
+      ? [trendAxisMax, trendAxisMax / 2, 0]
+      : [0]
+
+    return values.map((value) => {
+      const y =
+        TREND_CHART.bottom -
+        (value / trendAxisMax) * (TREND_CHART.bottom - TREND_CHART.top)
+
+      return {
+        value,
+        y,
+        label: formatAxisCurrency(value),
+      }
+    })
+  }, [trendAxisMax, trendHasValues])
+
   const trendPoints = useMemo(() => {
-    const max = Math.max(...trendTotals, 1)
     return trendTotals.map((value, index) => {
       const x =
-        trendTotals.length === 1 ? 50 : (index / (trendTotals.length - 1)) * 100
-      const y = 100 - (value / max) * 70 - 15
+        trendTotals.length === 1
+          ? (TREND_CHART.left + TREND_CHART.right) / 2
+          : TREND_CHART.left +
+            (index / (trendTotals.length - 1)) *
+              (TREND_CHART.right - TREND_CHART.left)
+      const y =
+        TREND_CHART.bottom -
+        (value / trendAxisMax) * (TREND_CHART.bottom - TREND_CHART.top)
       const month = trendMonths[index]
       const label = new Date(year, month - 1).toLocaleString('it-IT', {
         month: 'short',
       })
       return { x, y, value, label }
     })
-  }, [trendMonths, trendTotals, year])
+  }, [trendAxisMax, trendMonths, trendTotals, year])
 
   const trendPolyline = useMemo(
     () => trendPoints.map((point) => `${point.x},${point.y}`).join(' '),
@@ -1734,7 +1792,37 @@ function App() {
                   <strong>{formatCurrency(yearTotal)}</strong>
                 </div>
                 <div className="trend-chart">
-                  <svg viewBox="0 0 100 100" role="img" aria-label="Trend spese">
+                  <svg
+                    viewBox="0 0 120 100"
+                    role="img"
+                    aria-label="Trend spese con asse verticale in euro"
+                  >
+                    <g className="trend-axis" aria-hidden="true">
+                      {trendAxisTicks.map((tick) => (
+                        <g key={`${tick.label}-${tick.y}`}>
+                          <line
+                            x1={TREND_CHART.left}
+                            x2={TREND_CHART.right}
+                            y1={tick.y}
+                            y2={tick.y}
+                          />
+                          <text
+                            x={TREND_CHART.left - 4}
+                            y={tick.y + 1.8}
+                            textAnchor="end"
+                          >
+                            {tick.label}
+                          </text>
+                        </g>
+                      ))}
+                      <line
+                        className="trend-y-axis"
+                        x1={TREND_CHART.left}
+                        x2={TREND_CHART.left}
+                        y1={TREND_CHART.top}
+                        y2={TREND_CHART.bottom}
+                      />
+                    </g>
                     <polyline
                       fill="none"
                       stroke="currentColor"

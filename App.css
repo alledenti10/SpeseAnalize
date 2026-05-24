@@ -270,6 +270,23 @@
   color: var(--accent);
 }
 
+.trend-axis line {
+  stroke: rgba(95, 108, 130, 0.26);
+  stroke-width: 0.7;
+}
+
+.trend-axis text {
+  fill: var(--muted);
+  font-family: var(--font-sans);
+  font-size: 5px;
+  font-weight: 600;
+}
+
+.trend-axis .trend-y-axis {
+  stroke: rgba(95, 108, 130, 0.42);
+  stroke-width: 0.9;
+}
+
 .trend-dot {
   fill: var(--accent);
 }
