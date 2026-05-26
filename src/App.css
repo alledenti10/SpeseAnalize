@@ -435,6 +435,11 @@
   width: auto;
   height: 36px;
   line-height: 1;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   white-space: nowrap;
 }
 
@@ -1508,9 +1513,13 @@ button.ghost.danger {
     flex: 0 0 auto;
     min-width: 96px;
     min-height: 0;
-    padding: 8px 10px;
     height: 36px;
     line-height: 1;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
   }
 
   .report-label {
