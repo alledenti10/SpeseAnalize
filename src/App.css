@@ -1431,7 +1431,7 @@ button.ghost.danger {
     gap: 6px;
   }
 
-  .compact-tools button,
+  .compact-tools button:not(.report-toggle),
   .file-input {
     min-width: 0;
     flex: 1 1 120px;
@@ -1606,7 +1606,7 @@ button.ghost.danger {
     display: block;
   }
 
-  .compact-tools button,
+  .compact-tools button:not(.report-toggle),
   .file-input,
   .expense-actions button,
   .deadline-actions button,
