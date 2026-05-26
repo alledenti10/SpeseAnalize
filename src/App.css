@@ -1575,6 +1575,16 @@ button.ghost.danger {
     padding: 9px 11px;
   }
 
+  .compact-tools .report-toggle {
+    height: 36px;
+    padding: 0 10px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
   .toast {
     right: 10px;
     bottom: max(12px, env(safe-area-inset-bottom));
