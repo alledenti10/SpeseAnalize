@@ -433,7 +433,8 @@
   flex: 0 0 auto;
   min-width: 96px;
   width: auto;
-  height: auto;
+  height: 36px;
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -1507,6 +1508,8 @@ button.ghost.danger {
     min-width: 96px;
     min-height: 0;
     padding: 8px 10px;
+    height: 36px;
+    line-height: 1;
   }
 
   .report-label {
