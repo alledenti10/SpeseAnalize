@@ -816,6 +816,11 @@
   font-size: 12px;
   min-width: 96px;
   border-radius: 10px;
+  height: 36px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .compact-tools button:first-child {
