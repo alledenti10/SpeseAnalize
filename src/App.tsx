@@ -54,6 +54,13 @@ const getNotificationSupportState = (): NotificationSupportState => {
   return Notification.permission
 }
 
+const toLocalIsoDate = (date: Date) => {
+  const offsetMs = date.getTimezoneOffset() * 60 * 1000
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 10)
+}
+
+const getTodayIso = () => toLocalIsoDate(new Date())
+
 const getDaysUntil = (dateValue: string) => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -132,11 +139,11 @@ const emptyForm = {
   note: '',
 }
 
-const emptyDeadlineForm = {
+const buildEmptyDeadlineForm = () => ({
   title: '',
-  date: new Date().toISOString().slice(0, 10),
+  date: getTodayIso(),
   note: '',
-}
+})
 
 const hasSupabaseEnv =
   Boolean(import.meta.env.VITE_SUPABASE_URL) &&
@@ -329,9 +336,7 @@ const parseCsv = (text: string) => {
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState(
-    () => new Date().toISOString().slice(0, 10),
-  )
+  const [selectedDate, setSelectedDate] = useState(() => getTodayIso())
   const [monthExpenses, setMonthExpenses] = useState<Expense[]>([])
   const [formState, setFormState] = useState(emptyForm)
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
@@ -346,7 +351,7 @@ function App() {
   const [selectedCategories, setSelectedCategories] = useState<ExpenseCategory[]>([])
   const [yearExpenses, setYearExpenses] = useState<Expense[]>([])
   const [deadlines, setDeadlines] = useState<Deadline[]>([])
-  const [deadlineForm, setDeadlineForm] = useState(emptyDeadlineForm)
+  const [deadlineForm, setDeadlineForm] = useState(buildEmptyDeadlineForm)
   const [editingDeadlineId, setEditingDeadlineId] = useState<string | null>(null)
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importedFiles, setImportedFiles] = useState<string[]>([])
@@ -396,9 +401,7 @@ function App() {
       setBusy(true)
       const [year, month] = selectedDate.split('-').map(Number)
       const monthStart = `${selectedDate.slice(0, 7)}-01`
-      const monthEnd = new Date(year, month, 0)
-        .toISOString()
-        .slice(0, 10)
+      const monthEnd = toLocalIsoDate(new Date(year, month, 0))
 
       const { data, error } = await supabase
         .from('expenses')
@@ -583,9 +586,7 @@ function App() {
       const now = new Date()
       const start = `${year}-01-01`
       const end =
-        year === now.getFullYear()
-          ? now.toISOString().slice(0, 10)
-          : `${year}-12-31`
+        year === now.getFullYear() ? getTodayIso() : `${year}-12-31`
 
       const { data, error } = await supabase
         .from('expenses')
@@ -1114,7 +1115,7 @@ function App() {
           prev.map((item) => (item.id === editingDeadlineId ? data : item)),
         )
         setEditingDeadlineId(null)
-        setDeadlineForm({ ...emptyDeadlineForm, date: selectedDate })
+        setDeadlineForm({ ...buildEmptyDeadlineForm(), date: selectedDate })
         setStatus({ type: 'success', message: 'Scadenza aggiornata.' })
       }
     } else {
@@ -1136,7 +1137,7 @@ function App() {
         })
       } else if (data) {
         setDeadlines((prev) => [...prev, data as Deadline])
-        setDeadlineForm({ ...emptyDeadlineForm, date: selectedDate })
+        setDeadlineForm({ ...buildEmptyDeadlineForm(), date: selectedDate })
         setStatus({ type: 'success', message: 'Scadenza salvata.' })
       }
     }
@@ -1155,7 +1156,7 @@ function App() {
 
   const handleCancelDeadlineEdit = () => {
     setEditingDeadlineId(null)
-    setDeadlineForm({ ...emptyDeadlineForm, date: selectedDate })
+    setDeadlineForm({ ...buildEmptyDeadlineForm(), date: selectedDate })
   }
 
   const handleDeleteDeadline = async (deadlineId: string) => {
@@ -1679,7 +1680,7 @@ function App() {
                   value={selectedDate}
                   onChange={(event) =>
                     setSelectedDate(
-                      event.target.value || new Date().toISOString().slice(0, 10),
+                      event.target.value || getTodayIso(),
                     )
                   }
                 />
@@ -1929,13 +1930,15 @@ function App() {
               {monthsOfYear.map((m) => {
                 const mm = String(m).padStart(2, '0')
                 const key = `${year}-${mm}`
+                const todayIso = getTodayIso()
+                const isCurrentMonth = key === todayIso.slice(0, 7)
                 return (
                   <button
                     key={key}
                     type="button"
                     className={`month-chip ${selectedDate.slice(0, 7) === key ? 'active' : ''}`}
                     onClick={() => {
-                      setSelectedDate(`${key}-01`)
+                      setSelectedDate(isCurrentMonth ? todayIso : `${key}-01`)
                       document
                         .querySelector('.panel.deadlines')
                         ?.scrollIntoView({ behavior: 'smooth' })
